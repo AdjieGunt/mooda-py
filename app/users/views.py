@@ -31,7 +31,8 @@ class user_group(Resource):
         # print request.environ
         reqEnv = request.environ
         http_origin = reqEnv['HTTP_ORIGIN']
-        print http_origin
+        # print http_origin
+
         try:
             lastid = db.session.query(func.max(tbl_users.id)).one()[0]
             if lastid == None: lastid = 0
@@ -42,8 +43,12 @@ class user_group(Resource):
             lastname     = raw_dict['lastname']
             birthdate    = raw_dict['birthdate']
             user = tbl_users(userid, email, password, firstname, lastname, birthdate)
-            user.add(user)
-            resp = {'status' : 'true'}
+            check = user.query.filter_by(email=email).count()
+            if check > 0 :
+                return "User exits"
+            else:
+                user.add(user)
+                resp = {'status' : 'true'}
             # resp.status_code = 200
         except Exception as err:
             resp = {'success' : 'false', 'msg': err}
