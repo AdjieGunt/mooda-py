@@ -43,19 +43,36 @@ class user_group(Resource):
             lastname     = raw_dict['lastname']
             birthdate    = raw_dict['birthdate']
             user = tbl_users(userid, email, password, firstname, lastname, birthdate)
-            check = user.query.filter_by(email=email).count()
-            if check > 0 :
-                return "User exits"
-            else:
-                user.add(user)
-                resp = {'status' : 'true'}
+            user.add(user)
+            resp = {'status' : 'true'}
             # resp.status_code = 200
         except Exception as err:
             resp = {'success' : 'false', 'msg': err}
         return resp
+
+class CheckUserByEmail(Resource):
+    def post(self):
+        raw_dict = request.get_json(force=True)
+        # print request.environ
+        reqEnv = request.environ
+        http_origin = reqEnv['HTTP_ORIGIN']
+        # print http_origin
+        email = raw_dict['email']
+
+        email = raw_dict['email']
+            # cek email di db
+        check = tbl_users.query.filter_by(email=email).count()
+        if check > 0 :                                  # if email ada return true else return false
+            resp = {'status' : 'true', 'msg':'email sudah terdaftar'}
+            return resp
+        else :
+            resp = {'status' : 'false', 'msg':'email belum terdaftar'}                 #jika tidak ada maka return falsa
+            return resp
         
+        
+
 # Add Resource  
 api.add_resource(user_group, '/users')
-
+api.add_resource(CheckUserByEmail, '/usercheck')
 
 

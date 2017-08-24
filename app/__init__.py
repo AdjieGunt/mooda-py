@@ -1,7 +1,7 @@
 from flask import Flask, Response
 
 class MyResponse(Response):
-     default_mimetype = 'application/xml'
+    default_mimetype = 'application/xml'
      
     
 
