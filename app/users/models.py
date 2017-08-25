@@ -41,7 +41,7 @@ class tbl_users(db.Model, CRUD):
         # self.isactive = isactive
 
 
-class user_schema(Schema):
+class user_schema(Schema):              #buat ini jika ingin data di tampilkan
     # not_blank = validate.Length(min=1, error='Field cannot be blank')
     id = fields.Integer(dump_only=True)
     userid = fields.String()    
@@ -54,3 +54,5 @@ class user_schema(Schema):
     class Meta:
         type_ = 'users'
     
+
+# class tbl_category
