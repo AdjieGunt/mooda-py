@@ -1,6 +1,6 @@
 # DATABASE SETTINGS
 pg_db_username = 'postgres'
-pg_db_password = 'postgres'
+pg_db_password = 'idg'
 pg_db_name = 'moodadb'
 pg_db_hostname = 'localhost'
 
