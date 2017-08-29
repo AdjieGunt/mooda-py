@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, make_response
-from app.users.models import db, tbl_users, user_schema
+from app.models.m_users import tbl_users, user_schema
+from app import db
 from flask_restful import Api, Resource
 
 from sqlalchemy import func, sql
@@ -28,9 +29,10 @@ api = Api(users)
 class user_group(Resource):
     def post(self):
         raw_dict     = request.get_json(force=True)
+        print raw_dict
         # print request.environ
-        reqEnv = request.environ
-        http_origin = reqEnv['HTTP_ORIGIN']
+        # reqEnv = request.environ
+        # http_origin = reqEnv['HTTP_ORIGIN']
         # print http_origin
 
         try:
@@ -41,7 +43,18 @@ class user_group(Resource):
             password     = raw_dict['password']
             firstname    = raw_dict['firstname']
             lastname     = raw_dict['lastname']
-            birthdate    = raw_dict['birthdate']
+            
+            date         = raw_dict['birth']['date']
+            month        = raw_dict['birth']['month']
+            year         = raw_dict['birth']['year']
+
+            birthdate= year+'-'+month+'-'+date
+            # birthdate    = datetime.strftime(conver, '%Y-%m-%d')
+            # birthdate = conver
+            # print conver
+
+            
+
             user = tbl_users(userid, email, password, firstname, lastname, birthdate)
             user.add(user)
             resp = {'status' : 'true'}
@@ -95,6 +108,4 @@ class getUsers(Resource):
 # Add Resource  
 api.add_resource(user_group, '/users')
 api.add_resource(CheckUserByEmail, '/usercheck')
-api.add_resource(getUsers, '/users')
-
-
+api.add_resource(getUsers, '')

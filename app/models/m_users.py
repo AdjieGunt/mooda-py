@@ -1,24 +1,12 @@
 from marshmallow_jsonapi import Schema, fields
 from marshmallow import validate
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
+from app import CRUD
 
-db = SQLAlchemy()
+# print CRUD
+from app import db
 
-
-class CRUD():   
-
-    def add(self, resource):
-        db.session.add(resource)
-        return db.session.commit()   
-
-    def update(self):
-        return db.session.commit()
-
-    def delete(self, resource):
-        db.session.delete(resource)
-        return db.session.commit()
 
 class tbl_users(db.Model, CRUD):
     id = db.Column(db.Integer, primary_key=True)
@@ -53,6 +41,6 @@ class user_schema(Schema):              #buat ini jika ingin data di tampilkan
 
     class Meta:
         type_ = 'users'
-    
+
 
 # class tbl_category
