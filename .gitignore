@@ -1,2 +1,4 @@
 *.pyc
 /app/*.pyc
+/app/views_bu.py
+/app/viewsold.py
