@@ -3,7 +3,7 @@ from app.models.m_users import tbl_users, user_schema
 from app import db
 from flask_restful import Api, Resource
 
-from sqlalchemy import func, sql
+from sqlalchemy import func, sql, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from marshmallow import ValidationError
 
@@ -29,7 +29,7 @@ api = Api(users)
 class user_group(Resource):
     def post(self):
         raw_dict     = request.get_json(force=True)
-        print raw_dict
+        # print raw_dict
         # print request.environ
         # reqEnv = request.environ
         # http_origin = reqEnv['HTTP_ORIGIN']
@@ -52,8 +52,6 @@ class user_group(Resource):
             # birthdate    = datetime.strftime(conver, '%Y-%m-%d')
             # birthdate = conver
             # print conver
-
-            
 
             user = tbl_users(userid, email, password, firstname, lastname, birthdate)
             user.add(user)
@@ -100,12 +98,87 @@ class getUsers(Resource):
         newLimit = int(limit)
         newPage = int(page_number)
         limitUser = tbl_users.query.limit(newLimit).offset((newLimit*newPage)-newLimit)
-        data = user_schema().dump(limitUser, many=True).data                        #parsing data ke JSON
+
+        data = user_schema().dump(limitUser, many = True).data                        #parsing data ke JSON
         
-        return data      
+        return data
+
+class getUserById(Resource):
+    def get(self):
+        id_rw = request.args.get('id', None)
+
+        # reqEnv = request.environ        #buat ngedapetin data user dari mana aksesnya
+        # http_origin = reqEnv['HTTP_ORIGIN']
+
+        # user = tbl_users.query.filter_by(userid = id_user)                #untuk select all via id = id
+
+        user = db.session.query(
+            tbl_users.userid,                                                #ini juga bisa
+            tbl_users.email,       
+            tbl_users.firstname, 
+            tbl_users.lastname,
+            tbl_users.birthdate,
+            tbl_users.registerdate,
+            tbl_users.updateDate
+        ).filter_by(userid = id_rw)
+    
+        data=user_schema().dump(user, many = True).data      #many=True harus ada space mungkin , susah bgt cm nampilin data doang
+        
+        #get birthdate and split them
+        dt=datetime.strptime(data['data'][0]['attributes']['birthdate'],'%Y-%m-%d')
+        d=dt.day
+        m=dt.month
+        y=dt.year
+
+        #create new object
+        newDate = {}
+        newDate['date'] = d
+        newDate['month'] = m
+        newDate['year'] = y
+
+        #replacing databirthdate
+        data['data'][0]['attributes']['birthdate'] = newDate
+
+        # result= {}
+        # result['result']=data['data']
+        
+        return data
+
+
+class deleteUser(Resource):
+    def post(self):
+
+        id_rw = request.args.get('id', None)
+        if id_rw is None :
+            raw_dict     = request.get_json(force=True)
+            id_rw=raw_dict['id']
+
+        # reqEnv = request.environ
+        # http_origin = reqEnv['HTTP_ORIGIN']
+
+        try:
+            
+            sql = db.session.query(tbl_users).filter_by(userid = id_rw).update({"isDelete":True})
+            db.session.commit()
+            resp = {'status' : 'true'}
+        except Exception as err:
+            resp = {'success':'false', 'msg':err}
+
+        return resp
+
+# class updateUser(Resource):
+#     def post(self):
+
+
+
+# class OtosendEmail():
+#     def send():
+
         
 
 # Add Resource  
 api.add_resource(user_group, '/users')
+api.add_resource(getUserById, '/users')
+api.add_resource(deleteUser, '/delete')
 api.add_resource(CheckUserByEmail, '/usercheck')
 api.add_resource(getUsers, '')
