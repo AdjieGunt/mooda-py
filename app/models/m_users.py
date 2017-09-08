@@ -16,11 +16,11 @@ class tbl_users(db.Model, CRUD):
     firstname = db.Column(db.String(150), default=True)
     lastname = db.Column(db.String(150), nullable=False)
     birthdate = db.Column(db.DATE, nullable=False)
-    registerdate = db.Column(db.TIMESTAMP, default=func.now(), nullable=False)
-    updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=False)
-    isactive = db.Column(db.Boolean, default=False, nullable=False)
+    registerdate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
+    updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
+    isactive = db.Column(db.Boolean, default=False, nullable=True)
     isDelete = db.Column(db.Boolean, default=False, nullable=True)
-    choose = db.relationship('tbl_choose_category', backref='tbl_users', lazy='dynamic')
+    choose = db.relationship('tbl_interested', backref='tbl_users', lazy='dynamic')
     
     def __init__(self, id, email, password, firstname, lastname, birthdate):
         self.id = id

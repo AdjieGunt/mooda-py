@@ -23,8 +23,8 @@ class tbl_category(db.Model, CRUD):
     id = db.Column(db.Integer, primary_key = True)
     # id_category = db.Column(db.Integer, nullable = False)
     name_category = db.Column(db.String(100), nullable = False)
-    createDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=False)
-    updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=False)
+    createDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
+    updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
     isDelete = db.Column(db.Boolean, default=False, nullable=True)
     choose = db.relationship('tbl_item', backref='tbl_category', lazy='dynamic')
 
@@ -49,11 +49,11 @@ class tbl_item(db.Model, CRUD):
     id = db.Column(db.Integer, primary_key = True)
     # id_item = db.Column(db.Integer, nullable=False)
     name_item = db.Column(db.String(100), nullable= False)
-    createDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=False)
-    updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=False)
+    createDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
+    updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
     isDelete = db.Column(db.Boolean, default=False, nullable=True)
     id_category = db.Column(db.Integer, db.ForeignKey('tbl_category.id'))
-    choose = db.relationship('tbl_choose_category', backref='tbl_item', lazy='dynamic') 
+    choose = db.relationship('tbl_interested', backref='tbl_item', lazy='dynamic') 
     
     def __init__(self, id, name_item):
         self.id = id
@@ -66,4 +66,3 @@ class item_schema(Schema):
 
     class Meta:
         type_ = 'item'
-

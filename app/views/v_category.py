@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, make_response
-from app.models.m_category import tbl_category, category_schema, tbl_item, item_schema
+from app.models.m_category import tbl_category, category_schema, tbl_item, item_schema, tbl_interested
 from app import db
 from flask_restful import Api, Resource
 
@@ -34,10 +34,10 @@ class create_category(Resource):
         try :
             lastId = db.session.query(func.max(tbl_category.id)).one()[0]
             if lastId == None : lastId = 0
-            id_category = int(lastId) + 1
+            id = int(lastId) + 1
             name_category = raw_dict['name_category']
             # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-            data = tbl_category(id_category, name_category)
+            data = tbl_category(id, name_category)
             data.add(data)
 
             resp = {'success':'true'}
@@ -64,10 +64,10 @@ class create_item(Resource):
         try :
             lastId = db.session.query(func.max(tbl_item.id)).one()[0]
             if lastId == None : lastId = 0
-            id_item = int(lastId) + 1
+            id = int(lastId) + 1
             name_item = raw_dict['name_item']
             # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-            data = tbl_item(id_item, name_item)
+            data = tbl_item(id, name_item)
             data.add(data)
 
             resp = {'success':'true'}
@@ -90,7 +90,7 @@ class update_category(Resource):
             id_rw = raw_dict['id_category']
             name_rw = raw_dict['name_category']
 
-            updt = db.session.query(tbl_category).filter_by(id_category = id_rw).update({"name_category" : name_rw})   #script singkat
+            updt = db.session.query(tbl_category).filter_by(id = id_rw).update({"name_category" : name_rw})   #script singkat
             # updt = db.session.query(tbl_category).filter_by(id_category=id_rw).first()                #select id first
             # updt.name_category=name_rw             #isi data nya dengan apa
             db.session.commit()
@@ -100,6 +100,24 @@ class update_category(Resource):
             resp = {'success':'false', 'msg': err}
         
         return resp
+
+class userchooseitem(Resource):
+    def post(self):
+        # raw_dict = request.json.get()
+        id_user = request.json.get("id_user")
+        id_item = request.json.get("id_item")
+
+        try:
+            data = tbl_interested(id_user, id_item)
+            data.add(data)
+
+            resp = {'success':'true'}
+
+        except Exception as err:
+            resp = resp = {'success':'false', 'msg': err}
+
+        return resp
+
 
 
 
@@ -111,3 +129,4 @@ api.add_resource(update_category, '/update')
 #endpoint item
 api.add_resource(create_item, '/item')
 api.add_resource(select_items, '/item')
+api.add_resource(userchooseitem, '/userchoose')

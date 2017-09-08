@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, make_response
 from app.models.m_users import tbl_users, user_schema
+from app.views.sendEmail import senEmail
 from app import db
 from flask_restful import Api, Resource
 
@@ -22,7 +23,7 @@ users = Blueprint('users', __name__)
 
 user_group_schema = user_schema()
 
-
+#nanti akan di panggil di __init__.py
 api = Api(users)
 
 
@@ -38,7 +39,7 @@ class user_group(Resource):
         try:
             lastid = db.session.query(func.max(tbl_users.id)).one()[0]
             if lastid == None: lastid = 0
-            userid       = int(lastid) + 1
+            id           = int(lastid) + 1
             email        = raw_dict['email']
             password     = raw_dict['password']
             firstname    = raw_dict['firstname']
@@ -53,9 +54,14 @@ class user_group(Resource):
             # birthdate = conver
             # print conver
 
-            user = tbl_users(userid, email, password, firstname, lastname, birthdate)
+            user = tbl_users(id, email, password, firstname, lastname, birthdate)
             user.add(user)
             resp = {'status' : 'true'}
+
+            #send email
+            sen = senEmail(email)
+            sen.oto()
+
             # resp.status_code = 200
         except Exception as err:
             resp = {'success' : 'false', 'msg': err}
@@ -113,7 +119,7 @@ class getUserById(Resource):
         # user = tbl_users.query.filter_by(userid = id_user)                #untuk select all via id = id
 
         user = db.session.query(
-            tbl_users.userid,                                                #ini juga bisa
+            tbl_users.id,                                                #ini juga bisa
             tbl_users.email,       
             tbl_users.firstname, 
             tbl_users.lastname,
@@ -158,7 +164,7 @@ class deleteUser(Resource):
 
         try:
             
-            sql = db.session.query(tbl_users).filter_by(userid = id_rw).update({"isDelete":True})
+            sql = db.session.query(tbl_users).filter_by(id = id_rw).update({"isDelete":True})
             db.session.commit()
             resp = {'status' : 'true'}
         except Exception as err:
@@ -177,8 +183,8 @@ class deleteUser(Resource):
         
 
 # Add Resource  
-api.add_resource(user_group, '/users')
-api.add_resource(getUserById, '/users')
+api.add_resource(user_group, '/register')
+api.add_resource(getUserById, '/getuser')
 api.add_resource(deleteUser, '/delete')
 api.add_resource(CheckUserByEmail, '/usercheck')
 api.add_resource(getUsers, '')
