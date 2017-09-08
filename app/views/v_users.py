@@ -10,7 +10,7 @@ from marshmallow import ValidationError
 import re, datetime, json, dateutil.parser
 from datetime import date, datetime
 
-import random, os
+import random, os, hashlib
 
 # Blueprint
 users = Blueprint('users', __name__)
@@ -24,6 +24,14 @@ user_group_schema = user_schema()
 
 
 api = Api(users)
+
+class check_origin():
+    def isFromMooda():
+        origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in origin:
+            return True
+        else:
+            return False
 
 
 class user_group(Resource):
@@ -40,7 +48,7 @@ class user_group(Resource):
             if lastid == None: lastid = 0
             userid       = int(lastid) + 1
             email        = raw_dict['email']
-            password     = raw_dict['password']
+            password     = hashlib.sha256(raw_dict['password']).hexdigest()
             firstname    = raw_dict['firstname']
             lastname     = raw_dict['lastname']
             
