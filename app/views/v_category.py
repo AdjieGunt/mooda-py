@@ -15,11 +15,21 @@ import random, os
 # Blueprint
 categories = Blueprint('category', __name__)
 
-
 category_group_schema = category_schema()
 # item_group_schema = item_schema()
 
 api = Api(categories)
+
+#upload file
+app_root = os.path.dirname(os.path.abspath(__file__))
+
+class upload(Resource):
+    def post(self):
+        target = os.path.join(app_root, 'images/')
+        print(target)
+
+        if not os.path.isdir(target):
+            os.mkdir(target)
 
 
 #class endpoint
@@ -52,7 +62,22 @@ class select_category(Resource):
         select = tbl_category.query.all()
         data = category_schema().dump(select,  many = True).data
 
-        return data
+        # print data
+        dataA = []
+        for i in range(len(data['data'])):
+            
+            data1 =[]
+            data1.insert(i, {
+                'id_category': data['data'][i]['id'],
+                'name_category': data['data'][i]['attributes']['name_category'],
+                'img_category':data['data'][i]['attributes']['img_category'],
+                'parent':''
+                })
+            for a in data1:
+                dataA.append(a)
+        data['data'] = dataA        
+        result = data
+        return result
 
 #class endpoint
 class create_item(Resource):
@@ -80,6 +105,18 @@ class select_items(Resource):
     def get(self):
         select = tbl_item.query.all()
         data = item_schema().dump(select,  many = True).data
+
+        # belum selesai joining
+        # data1 = []
+        # for i in range(len(data['data'][0]['attributes'])):
+        #     data2 = []
+        #     data2.insert(i, {
+        #         'id_item':data['data'][i]['id'],
+        #         'name_item':data['data'][i]['name_item'],
+        #         'img_item':data['data'][i]['img_item'],
+        #         'parent':data['data'][i]['']
+        #     })
+
         return data
 
 class update_category(Resource):

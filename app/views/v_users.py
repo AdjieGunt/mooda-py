@@ -44,10 +44,21 @@ class user_group(Resource):
             password     = raw_dict['password']
             firstname    = raw_dict['firstname']
             lastname     = raw_dict['lastname']
-            
+
+                        
             date         = raw_dict['birth']['date']
             month        = raw_dict['birth']['month']
             year         = raw_dict['birth']['year']
+
+            # print date +'-'+month +'-'+ year
+
+            # logic if date from google / facebook are nol data
+            if date == "00" and month == "00" and year == "0000" :
+                date = "01"
+                month = "01"
+                year = "2000"
+
+                # print date +'-'+month +'-'+ year
 
             birthdate= year+'-'+month+'-'+date
             # birthdate    = datetime.strftime(conver, '%Y-%m-%d')
@@ -58,7 +69,7 @@ class user_group(Resource):
             user.add(user)
             resp = {'status' : 'true'}
 
-            #send email
+            # send email
             sen = senEmail(email)
             sen.oto()
 
@@ -85,7 +96,7 @@ class CheckUserByEmail(Resource):
             resp = {'status' : 'false', 'msg':'email belum terdaftar'}                 #jika tidak ada maka return falsa
             return resp
 
-class getUsers(Resource):
+class getLimitUsers(Resource):
     def get(self):    #parameter page_number
         page_number = request.args.get('page', None)                    #untuk set parameter
         limit = request.args.get('limit', None)
@@ -107,7 +118,24 @@ class getUsers(Resource):
 
         data = user_schema().dump(limitUser, many = True).data                        #parsing data ke JSON
         
-        return data
+        data1 = []
+        for i in range(len(data['data'])):
+            data2 = []
+            data2.insert(i, {
+                'id':data['data'][i]['id'],
+                'email':data['data'][i]['attributes']['email'],
+                'firsname':data['data'][i]['attributes']['firstname'],
+                'lastname':data['data'][i]['attributes']['lastname'],
+                'birthdate':data['data'][i]['attributes']['birthdate'],
+                'isActive':data['data'][i]['attributes']['isactive']
+            })
+            for a in data2:
+                data1.append(a)
+        
+        data['data'] = data1
+        result = data
+
+        return result
 
 class getUserById(Resource):
     def get(self):
@@ -123,10 +151,8 @@ class getUserById(Resource):
             tbl_users.email,       
             tbl_users.firstname, 
             tbl_users.lastname,
-            tbl_users.birthdate,
-            tbl_users.registerdate,
-            tbl_users.updateDate
-        ).filter_by(userid = id_rw)
+            tbl_users.birthdate            
+        ).filter_by(id = id_rw)
     
         data=user_schema().dump(user, many = True).data      #many=True harus ada space mungkin , susah bgt cm nampilin data doang
         
@@ -144,11 +170,26 @@ class getUserById(Resource):
 
         #replacing databirthdate
         data['data'][0]['attributes']['birthdate'] = newDate
+        
+        data1 = []
+        for i in range(len(data['data'])):
+            data2 = []
+            data2.insert(i, {
+                'id':data['data'][i]['id'],
+                'email':data['data'][i]['attributes']['email'],
+                'firsname':data['data'][i]['attributes']['firstname'],
+                'lastname':data['data'][i]['attributes']['lastname'],
+                'birthdate':data['data'][i]['attributes']['birthdate']
+            })
+            for a in data2:
+                data1.append(a)
 
-        # result= {}
+        # replace real data to data1 
+        data['data'] = data1 
+        result= data
         # result['result']=data['data']
         
-        return data
+        return result
 
 
 class deleteUser(Resource):
@@ -187,4 +228,4 @@ api.add_resource(user_group, '/register')
 api.add_resource(getUserById, '/getuser')
 api.add_resource(deleteUser, '/delete')
 api.add_resource(CheckUserByEmail, '/usercheck')
-api.add_resource(getUsers, '')
+api.add_resource(getLimitUsers, '')

@@ -12,7 +12,7 @@ class tbl_users(db.Model, CRUD):
     id = db.Column(db.Integer, primary_key=True)
     # userid = db.Column(db.String(250), nullable=False)
     email = db.Column(db.String(250), nullable=False)
-    password = db.Column(db.String(35), nullable=False)
+    password = db.Column(db.String(35), nullable=True)
     firstname = db.Column(db.String(150), default=True)
     lastname = db.Column(db.String(150), nullable=False)
     birthdate = db.Column(db.DATE, nullable=False)
@@ -41,7 +41,8 @@ class user_schema(Schema):              #buat ini jika ingin data di tampilkan
     password = fields.String()
     firstname = fields.String()
     lastname = fields.String()
-    birthdate = fields.Date()       
+    birthdate = fields.Date()
+    isactive = fields.Boolean()      
 
     class Meta:
         type_ = 'users'
