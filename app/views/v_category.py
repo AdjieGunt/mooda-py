@@ -46,8 +46,9 @@ class create_category(Resource):
             if lastId == None : lastId = 0
             id = int(lastId) + 1
             name_category = raw_dict['name_category']
+            img_category = raw_dict['img_category']
             # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-            data = tbl_category(id, name_category)
+            data = tbl_category(id, name_category, img_category)
             data.add(data)
 
             resp = {'success':'true'}
@@ -91,8 +92,9 @@ class create_item(Resource):
             if lastId == None : lastId = 0
             id = int(lastId) + 1
             name_item = raw_dict['name_item']
+            img_item = raw_dict['img_item']
             # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-            data = tbl_item(id, name_item)
+            data = tbl_item(id, name_item, img_item)
             data.add(data)
 
             resp = {'success':'true'}

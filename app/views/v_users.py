@@ -118,6 +118,8 @@ class getLimitUsers(Resource):
 
         data = user_schema().dump(limitUser, many = True).data                        #parsing data ke JSON
         
+
+        #membuat structure json baru
         data1 = []
         for i in range(len(data['data'])):
             data2 = []
