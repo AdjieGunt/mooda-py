@@ -25,7 +25,7 @@ def create_app(config_filename):
     app.config.from_object(config_filename)
     app.response_class = MyResponse
 
-    # from app.models.models import db
+    from app import db                #harus ada ini untuk buat table, tapi kalau table sudah ada tidak perlu di gunakan lagi,, kalau di gunakan pasti program bakal error
     db.init_app(app)
 
     # Blueprints   
