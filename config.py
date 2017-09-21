@@ -15,7 +15,10 @@ PORT = 2000
 HOST = "0.0.0.0"
 SQLALCHEMY_ECHO = False
 SQLALCHEMY_TRACK_MODIFICATIONS = True
-SECRET_KEY = "ex085wpjew_shopee"
+# for generete token JWT
+SECRET_KEY = "ex085wpjewcalak_mooda"
+JWT_ALGORITHM = 'HS256'
+JWT_EXP_DELTA_SECONDS = 1
 # PostgreSQL
 SQLALCHEMY_DATABASE_URI = "postgresql://{DB_USER}:{DB_PASS}@{DB_ADDR}/{DB_NAME}".format(DB_USER=pg_db_username,
                                                                                         DB_PASS=pg_db_password,

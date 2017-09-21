@@ -3,13 +3,19 @@ from app.models.m_users import tbl_users, user_schema
 from app.views.sendEmail import senEmail
 from app import db
 from flask_restful import Api, Resource
+import Crypto.Hash
+from Crypto.Hash import SHA256          #encrypt password
+# import file config for generete token JWT
+from config import SECRET_KEY, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
+from app.views.session_authorization import token_required
+import jwt
 
 from sqlalchemy import func, sql, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from marshmallow import ValidationError
 
 import re, datetime, json, dateutil.parser
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import random, os
 
@@ -20,15 +26,15 @@ users = Blueprint('users', __name__)
 #https://github.com/marshmallow-code/marshmallow-jsonapi
 
 # Schema
-
 user_group_schema = user_schema()
 
 #nanti akan di panggil di __init__.py
 api = Api(users)
 
 
-class user_group(Resource):
-    def post(self):
+class createuser(Resource):
+    @token_required
+    def post(current_user, self):
         raw_dict     = request.get_json(force=True)
         # print raw_dict
         # print request.environ
@@ -44,42 +50,41 @@ class user_group(Resource):
             password     = raw_dict['password']
             firstname    = raw_dict['firstname']
             lastname     = raw_dict['lastname']
-
-                        
             date         = raw_dict['birth']['date']
             month        = raw_dict['birth']['month']
             year         = raw_dict['birth']['year']
 
-            # print date +'-'+month +'-'+ year
+            # encryption password
+            # encript(password)
+            pass_enc = encript(password)
+            
+            # print pass_enc, "resgis"
 
+            # print date +'-'+month +'-'+ year
             # logic if date from google / facebook are nol data
             if date == "00" and month == "00" and year == "0000" :
                 date = "01"
                 month = "01"
                 year = "2000"
-
-                # print date +'-'+month +'-'+ year
-
             birthdate= year+'-'+month+'-'+date
             # birthdate    = datetime.strftime(conver, '%Y-%m-%d')
             # birthdate = conver
             # print conver
 
-            user = tbl_users(id, email, password, firstname, lastname, birthdate)
+            user = tbl_users(id, email, pass_enc, firstname, lastname, birthdate)
             user.add(user)
-            resp = {'status' : 'true'}
+            resp = {'status' : 'true'}, 201                             #201 status created
 
             # send email
             sen = senEmail(email)
             sen.oto()
-
-            # resp.status_code = 200
         except Exception as err:
-            resp = {'success' : 'false', 'msg': err}
+            resp = {'success' : 'false', 'msg': err}, 400               #400 bad request
         return resp
 
-class CheckUserByEmail(Resource):
-    def post(self):
+class CheckUserByEmail(Resource):                                       #tambahkan disini juga sebagai request parameter token
+    @token_required
+    def post(current_user, self):
         raw_dict = request.get_json(force=True)
         # print request.environ
         reqEnv = request.environ        #buat ngedapetin data user dari mana aksesnya
@@ -90,16 +95,22 @@ class CheckUserByEmail(Resource):
             # cek email di db
         check = tbl_users.query.filter_by(email=email).count()
         if check > 0 :                                  # if email ada return true else return false
-            resp = {'status' : 'true', 'msg':'email sudah terdaftar'}
+            resp = {'status' : 'true', 'msg':'email sudah terdaftar'}, 302              #302 status found
             return resp
         else :
-            resp = {'status' : 'false', 'msg':'email belum terdaftar'}                 #jika tidak ada maka return falsa
+            resp = {'status' : 'false', 'msg':'email belum terdaftar'}, 202                 #202 status accepted , jika tidak ada maka return falsa
             return resp
 
 class getLimitUsers(Resource):
-    def get(self):    #parameter page_number
+    @token_required
+    def get(current_user, self):    #parameter page_number
         page_number = request.args.get('page', None)                    #untuk set parameter
         limit = request.args.get('limit', None)
+
+        checkdata = tbl_users.query.all()
+        if not checkdata:
+            resp = {'msg':'No found data !'}, 200                   #status ok tp data tidak ada
+            return resp
         
         # try:
         #     limit
@@ -137,11 +148,18 @@ class getLimitUsers(Resource):
         data['data'] = data1
         result = data
 
-        return result
+        return result, 200                                  #200 status ok
 
 class getUserById(Resource):
-    def get(self):
+    @token_required
+    def get(current_user, self):
         id_rw = request.args.get('id', None)
+
+        checkdata = tbl_users.query.filter_by(id=id_rw).all()
+
+        if not checkdata:
+            resp = {'msg':'No data found !'}, 200
+            return resp
 
         # reqEnv = request.environ        #buat ngedapetin data user dari mana aksesnya
         # http_origin = reqEnv['HTTP_ORIGIN']
@@ -191,13 +209,19 @@ class getUserById(Resource):
         result= data
         # result['result']=data['data']
         
-        return result
+        return result, 200
 
 
 class deleteUser(Resource):
-    def post(self):
+    @token_required
+    def post(current_user, self):
+        print current_user
+        #buat logic jika bukan admin maka tidak bisa delete
+        # if not current_user == 11:
+        #     resp = {'msg':'Cannot perform that function !'}, 401, {'WWW-Authenticate':'Basic realm="Admin required !" '}
+        #     return resp
 
-        id_rw = request.args.get('id', None)
+        id_rw = request.args.get('id', None)            #parameter header untuk delete
         if id_rw is None :
             raw_dict     = request.get_json(force=True)
             id_rw=raw_dict['id']
@@ -206,28 +230,71 @@ class deleteUser(Resource):
         # http_origin = reqEnv['HTTP_ORIGIN']
 
         try:
-            
             sql = db.session.query(tbl_users).filter_by(id = id_rw).update({"isDelete":True})
             db.session.commit()
-            resp = {'status' : 'true'}
+            resp = {'status' : 'true'}, 200
         except Exception as err:
-            resp = {'success':'false', 'msg':err}
+            resp = {'success':'false', 'msg':err}, 400
 
         return resp
 
 # class updateUser(Resource):
 #     def post(self):
 
+class login(Resource):
+    def post(self):
+
+        #authentication session
+        auth = request.authorization                                    #get request header from browser
+        
+        email_rw = auth.username                                        #data yg di kirim lewat header
+        password_rw = auth.password                                     #data yg di kirim lewat header
+        
+        # email_rw = request.json.get("email")                          #data yg di kirim lewat json
+        # password_rw = request.json.get("password")                    #data yg di kirim lewat json
+
+        passw_enc = encript(password_rw)                                #encript password
+
+        sql = tbl_users.query.filter_by(email=email_rw).filter_by(password=passw_enc).count()
+        # sql = db.session.query(tbl_users.id).filter_by(email=email_rw).filter_by(password=passw_enc).count()
+
+        if sql > 0 :
+
+            sql1 = db.session.query(
+                tbl_users.id   
+            ).filter_by(email=email_rw)
+
+            data_user = user_schema().dump(sql1, many=True).data
+
+            for i in range(len(data_user['data'])):
+                # get id user for generet token jwt
+                userid = data_user['data'][i]['id']
+            
+            #generete new token
+            payload = {
+                'userid':userid,
+                'exp':datetime.utcnow() + timedelta(weeks=JWT_EXP_DELTA_SECONDS)
+            }
+            token = jwt.encode(payload, SECRET_KEY, JWT_ALGORITHM)                                             #SECRET_KEY, JWT_ALGORITHM di ambil dari file config
+            token_decode = token.decode('utf-8')
+            # print token2
+            # resp = { 'success':'true', 'data': data_user}, 202
+            resp = {'success':'true', 'token':token_decode}, 202                                                                        #200  status accepted
+        else:
+            resp = {'success':'false', 'msg':'Email salah.'}, 401, {'WWW-Authenticate':'Basic realm="Login required !" '}       #401 status UNAUTHORIZED, WWW-Authenticate itu untuk response error di header
+        return resp
 
 
-# class OtosendEmail():
-#     def send():
-
+def encript(password):
+    enc = SHA256.new(password)
+    pass_en=enc.hexdigest()
+    return pass_en
         
 
 # Add Resource  
-api.add_resource(user_group, '/register')
+api.add_resource(createuser, '/register')
 api.add_resource(getUserById, '/getuser')
 api.add_resource(deleteUser, '/delete')
 api.add_resource(CheckUserByEmail, '/usercheck')
 api.add_resource(getLimitUsers, '')
+api.add_resource(login, '/login')

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, make_response
 from app.models.m_category import tbl_category, category_schema, tbl_item, item_schema, tbl_interested
 from app import db
 from flask_restful import Api, Resource
+from app.views.session_authorization import token_required
 
 from sqlalchemy import func, sql, update
 from sqlalchemy.exc import SQLAlchemyError
@@ -24,7 +25,8 @@ api = Api(categories)
 app_root = os.path.dirname(os.path.abspath(__file__))
 
 class upload(Resource):
-    def post(self):
+    @token_required
+    def post(current_user, self):
         target = os.path.join(app_root, 'images/')
         print(target)
 
@@ -34,9 +36,8 @@ class upload(Resource):
 
 #class endpoint
 class create_category(Resource):
-    # def get(self):
-    #     return "Hi.. this is msg from create_category class with method get"
-    def post(self):
+    @token_required
+    def post(current_user, self):
         raw_dict = request.get_json(force=True)
         # reqEnv = request.environ
         # http_origin = reqEnv['ORIGIN']
@@ -58,7 +59,8 @@ class create_category(Resource):
         return resp
 
 class select_category(Resource):
-    def get(self):
+    @token_required
+    def get(current_user, self):
 
         select = tbl_category.query.all()
         data = category_schema().dump(select,  many = True).data
@@ -82,7 +84,8 @@ class select_category(Resource):
 
 #class endpoint
 class create_item(Resource):
-    def post(self):
+    @token_required
+    def post(current_user, self):
         raw_dict = request.get_json(force=True)
         # reqEnv = request.environ
         # http_origin = reqEnv['ORIGIN']
@@ -104,7 +107,8 @@ class create_item(Resource):
         return resp
     
 class select_items(Resource):
-    def get(self):
+    @token_required
+    def get(current_user, self):
         select = tbl_item.query.all()
         data = item_schema().dump(select,  many = True).data
 
@@ -122,7 +126,8 @@ class select_items(Resource):
         return data
 
 class update_category(Resource):
-    def patch(self):
+    @token_required
+    def patch(current_user, self):
         raw_dict = request.get_json(force=True)
 
         try:
@@ -141,7 +146,8 @@ class update_category(Resource):
         return resp
 
 class userchooseitem(Resource):
-    def post(self):
+    @token_required
+    def post(current_user, self):
         # raw_dict = request.json.get()
         id_user = request.json.get("id_user")
         id_item = request.json.get("id_item")

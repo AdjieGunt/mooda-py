@@ -15,7 +15,7 @@ class senEmail():                                    #create class
         
         host_email = "smtp.gmail.com"
         port_email = 587
-        username = "calak1401@gmail.com"
+        username = "calakmania@gmail.com"
         password = "jemmycalak14"
         # send_to = "jemmy.sapta14@gmail.com"
 
