@@ -5,9 +5,11 @@ from app import db
 from flask_restful import Api, Resource
 import Crypto.Hash
 from Crypto.Hash import SHA256          #encrypt password
-# import file config for generete token JWT
-from config import SECRET_KEY, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
-from app.views.session_authorization import token_required
+from config import SECRET_KEY, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS     # import file config for generete token JWT
+from app.views.session_authorization import token_required              # import session authorization
+from app.views.request_origin import cross_origin
+from flask_cors import CORS, cross_origin
+
 import jwt
 
 from sqlalchemy import func, sql, update, delete
@@ -18,6 +20,8 @@ import re, datetime, json, dateutil.parser
 from datetime import date, datetime, timedelta
 
 import random, os
+
+from functools import update_wrapper
 
 # Blueprint
 users = Blueprint('users', __name__)
@@ -31,218 +35,256 @@ user_group_schema = user_schema()
 #nanti akan di panggil di __init__.py
 api = Api(users)
 
+def from_mooda():
+    http_origin = request.environ['HTTP_ORIGIN']
+    print http_origin
+    if http_origin == 'mooda.id':
+        return True
+    else:
+        return False
 
 class createuser(Resource):
     @token_required
     def post(current_user, self):
-        raw_dict     = request.get_json(force=True)
-        # print raw_dict
-        # print request.environ
-        # reqEnv = request.environ
-        # http_origin = reqEnv['HTTP_ORIGIN']
-        # print http_origin
+        http_origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in http_origin:
+            raw_dict     = request.get_json(force=True)
 
-        try:
-            lastid = db.session.query(func.max(tbl_users.id)).one()[0]
-            if lastid == None: lastid = 0
-            id           = int(lastid) + 1
-            email        = raw_dict['email']
-            password     = raw_dict['password']
-            firstname    = raw_dict['firstname']
-            lastname     = raw_dict['lastname']
-            date         = raw_dict['birth']['date']
-            month        = raw_dict['birth']['month']
-            year         = raw_dict['birth']['year']
+            try:
+                lastid = db.session.query(func.max(tbl_users.id)).one()[0]
+                if lastid == None: lastid = 0
+                id           = int(lastid) + 1
+                email        = raw_dict['email']
+                password     = raw_dict['password']
+                firstname    = raw_dict['firstname']
+                lastname     = raw_dict['lastname']
+                date         = raw_dict['birth']['date']
+                month        = raw_dict['birth']['month']
+                year         = raw_dict['birth']['year']
 
-            # encryption password
-            # encript(password)
-            pass_enc = encript(password)
-            
-            # print pass_enc, "resgis"
+                # encryption password
+                # encript(password)
+                pass_enc = encript(password)
+                
+                # print pass_enc, "resgis"
 
-            # print date +'-'+month +'-'+ year
-            # logic if date from google / facebook are nol data
-            if date == "00" and month == "00" and year == "0000" :
-                date = "01"
-                month = "01"
-                year = "2000"
-            birthdate= year+'-'+month+'-'+date
-            # birthdate    = datetime.strftime(conver, '%Y-%m-%d')
-            # birthdate = conver
-            # print conver
+                # print date +'-'+month +'-'+ year
+                # logic if date from google / facebook are nol data
+                if date == "00" and month == "00" and year == "0000" :
+                    date = "01"
+                    month = "01"
+                    year = "2000"
+                birthdate= year+'-'+month+'-'+date
+                # birthdate    = datetime.strftime(conver, '%Y-%m-%d')
+                # birthdate = conver
+                # print conver
 
-            user = tbl_users(id, email, pass_enc, firstname, lastname, birthdate)
-            user.add(user)
-            resp = {'status' : 'true'}, 201                             #201 status created
+                user = tbl_users(id, email, pass_enc, firstname, lastname, birthdate)
+                user.add(user)
+                resp = {'status' : 'true'}, 201                             #201 status created
 
-            # send email
-            sen = senEmail(email)
-            sen.oto()
-        except Exception as err:
-            resp = {'success' : 'false', 'msg': err}, 400               #400 bad request
+                # send email
+                sen = senEmail(email)
+                sen.oto()
+            except Exception as err:
+                resp = {'success' : 'false', 'msg': err}, 400               #400 bad request
+            return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
         return resp
 
 class CheckUserByEmail(Resource):                                       #tambahkan disini juga sebagai request parameter token
     @token_required
     def post(current_user, self):
-        raw_dict = request.get_json(force=True)
-        # print request.environ
-        reqEnv = request.environ        #buat ngedapetin data user dari mana aksesnya
-        http_origin = reqEnv['HTTP_ORIGIN']
-        # print http_origin
-        
-        email = raw_dict['email']
-            # cek email di db
-        check = tbl_users.query.filter_by(email=email).count()
-        if check > 0 :                                  # if email ada return true else return false
-            resp = {'status' : 'true', 'msg':'email sudah terdaftar'}, 302              #302 status found
-            return resp
-        else :
-            resp = {'status' : 'false', 'msg':'email belum terdaftar'}, 202                 #202 status accepted , jika tidak ada maka return falsa
+        http_origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in http_origin:
+
+            raw_dict = request.get_json(force=True)
+            # print request.environ
+            reqEnv = request.environ        #buat ngedapetin data user dari mana aksesnya
+            http_origin = reqEnv['HTTP_ORIGIN']
+            # print http_origin
+            
+            email = raw_dict['email']
+                # cek email di db
+            check = tbl_users.query.filter_by(email=email).count()
+            if check > 0 :                                  # if email ada return true else return false
+                resp = {'status' : 'true', 'msg':'email sudah terdaftar'}, 302              #302 status found
+                return resp
+            else :
+                resp = {'status' : 'false', 'msg':'email belum terdaftar'}, 202                 #202 status accepted , jika tidak ada maka return falsa
+                return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
             return resp
 
 class getLimitUsers(Resource):
     @token_required
-    def get(current_user, self):    #parameter page_number
-        page_number = request.args.get('page', None)                    #untuk set parameter
-        limit = request.args.get('limit', None)
+    def get(current_user, self):
+        http_url = request.headers
+        if 'mooda.id' in http_url['host']:                                        #parameter page_number
+            # http_origin = request.environ['Access-Control-Allow-Origin']                    #request HTTP_origin
+            # if 'mooda.id' in http_origin:
+            page_number = request.args.get('page', None)                    #untuk set parameter
+            limit = request.args.get('limit', None)
 
-        checkdata = tbl_users.query.all()
-        if not checkdata:
-            resp = {'msg':'No found data !'}, 200                   #status ok tp data tidak ada
-            return resp
-        
-        # try:
-        #     limit
-        # except NameError:
-        #    limit =50
-        if page_number == limit is None:
-            limit = 50
-            page_number = 1
-        elif limit is None:
-            limit = 50
-        # limitUser = tbl_users.query.limit(number_per_page).offset(page_number * number_per_page)                  #batasan user yg akan di tampilkan
-        # limitUser = tbl_users.query.limit(number_per_page).offset((number_per_page*page_number)-number_per_page)  #ofseet itu untuk dari data ke berapa yang akan di tampilin
-        newLimit = int(limit)
-        newPage = int(page_number)
-        limitUser = tbl_users.query.limit(newLimit).offset((newLimit*newPage)-newLimit)
+            checkdata = tbl_users.query.all()
+            if not checkdata:
+                resp = {'msg':'No found data !'}, 200                   #status ok tp data tidak ada
+                return resp
+            
+            # try:
+            #     limit
+            # except NameError:
+            #    limit =50
+            if page_number == limit is None:
+                limit = 50
+                page_number = 1
+            elif limit is None:
+                limit = 50
+            # limitUser = tbl_users.query.limit(number_per_page).offset(page_number * number_per_page)                  #batasan user yg akan di tampilkan
+            # limitUser = tbl_users.query.limit(number_per_page).offset((number_per_page*page_number)-number_per_page)  #ofseet itu untuk dari data ke berapa yang akan di tampilin
+            newLimit = int(limit)
+            newPage = int(page_number)
+            limitUser = tbl_users.query.limit(newLimit).offset((newLimit*newPage)-newLimit)
 
-        data = user_schema().dump(limitUser, many = True).data                        #parsing data ke JSON
-        
+            data = user_schema().dump(limitUser, many = True).data                        #parsing data ke JSON
+            
 
-        #membuat structure json baru
-        data1 = []
-        for i in range(len(data['data'])):
-            data2 = []
-            data2.insert(i, {
-                'id':data['data'][i]['id'],
-                'email':data['data'][i]['attributes']['email'],
-                'firsname':data['data'][i]['attributes']['firstname'],
-                'lastname':data['data'][i]['attributes']['lastname'],
-                'birthdate':data['data'][i]['attributes']['birthdate'],
-                'isActive':data['data'][i]['attributes']['isactive']
-            })
-            for a in data2:
-                data1.append(a)
-        
-        data['data'] = data1
-        result = data
+            #membuat structure json baru
+            data1 = []
+            for i in range(len(data['data'])):
+                data2 = []
+                data2.insert(i, {
+                    'id':data['data'][i]['id'],
+                    'email':data['data'][i]['attributes']['email'],
+                    'firsname':data['data'][i]['attributes']['firstname'],
+                    'lastname':data['data'][i]['attributes']['lastname'],
+                    'birthdate':data['data'][i]['attributes']['birthdate'],
+                    'isActive':data['data'][i]['attributes']['isactive']
+                })
+                for a in data2:
+                    data1.append(a)
+            
+            data['data'] = data1
+            result = data
 
-        return result, 200                                  #200 status ok
-
-class getUserById(Resource):
+            resp = result, 200                                  #200 status ok
+            # else:
+            #     resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 400
+            #     return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
+        return resp
+class getUserById(Resource):    
     @token_required
     def get(current_user, self):
-        id_rw = request.args.get('id', None)
-
-        checkdata = tbl_users.query.filter_by(id=id_rw).all()
-
-        if not checkdata:
-            resp = {'msg':'No data found !'}, 200
-            return resp
-
-        # reqEnv = request.environ        #buat ngedapetin data user dari mana aksesnya
-        # http_origin = reqEnv['HTTP_ORIGIN']
-
-        # user = tbl_users.query.filter_by(userid = id_user)                #untuk select all via id = id
-
-        user = db.session.query(
-            tbl_users.id,                                                #ini juga bisa
-            tbl_users.email,       
-            tbl_users.firstname, 
-            tbl_users.lastname,
-            tbl_users.birthdate            
-        ).filter_by(id = id_rw)
-    
-        data=user_schema().dump(user, many = True).data      #many=True harus ada space mungkin , susah bgt cm nampilin data doang
         
-        #get birthdate and split them
-        dt=datetime.strptime(data['data'][0]['attributes']['birthdate'],'%Y-%m-%d')
-        d=dt.day
-        m=dt.month
-        y=dt.year
+        http_url = request.headers
+        if 'mooda.id' in http_url['host']:    
+        # if '127.0.0.1:2000' in http_url['host']:
 
-        #create new object
-        newDate = {}
-        newDate['date'] = d
-        newDate['month'] = m
-        newDate['year'] = y
+            # http= request.url_root
+            # http1 = request.headers
+            # cookies = request.cookies.get
+            # print http, http1, cookies
 
-        #replacing databirthdate
-        data['data'][0]['attributes']['birthdate'] = newDate
+
+            id_rw = request.args.get('id', None)
+            checkdata = tbl_users.query.filter_by(id=id_rw).all()
+            if not checkdata:
+                resp = {'msg':'No data found !'}, 200
+                return resp
+
+            # user = tbl_users.query.filter_by(userid = id_user)                #untuk select all via id = id
+
+            user = db.session.query(
+                tbl_users.id,                                                   #ini juga bisa
+                tbl_users.email,       
+                tbl_users.firstname, 
+                tbl_users.lastname,
+                tbl_users.birthdate            
+            ).filter_by(id = id_rw)
         
-        data1 = []
-        for i in range(len(data['data'])):
-            data2 = []
-            data2.insert(i, {
-                'id':data['data'][i]['id'],
-                'email':data['data'][i]['attributes']['email'],
-                'firsname':data['data'][i]['attributes']['firstname'],
-                'lastname':data['data'][i]['attributes']['lastname'],
-                'birthdate':data['data'][i]['attributes']['birthdate']
-            })
-            for a in data2:
-                data1.append(a)
+            data=user_schema().dump(user, many = True).data                     #many=True harus ada space mungkin , susah bgt cm nampilin data doang
+            
+            #get birthdate and split them
+            dt=datetime.strptime(data['data'][0]['attributes']['birthdate'],'%Y-%m-%d')
+            d=dt.day
+            m=dt.month
+            y=dt.year
 
-        # replace real data to data1 
-        data['data'] = data1 
-        result= data
-        # result['result']=data['data']
-        
-        return result, 200
+            #create new object
+            newDate = {}
+            newDate['date'] = d
+            newDate['month'] = m
+            newDate['year'] = y
+
+            #replacing databirthdate
+            data['data'][0]['attributes']['birthdate'] = newDate
+            
+            data1 = []
+            for i in range(len(data['data'])):
+                data2 = []
+                data2.insert(i, {
+                    'id':data['data'][i]['id'],
+                    'email':data['data'][i]['attributes']['email'],
+                    'firsname':data['data'][i]['attributes']['firstname'],
+                    'lastname':data['data'][i]['attributes']['lastname'],
+                    'birthdate':data['data'][i]['attributes']['birthdate']
+                })
+                for a in data2:
+                    data1.append(a)
+
+            # replace real data to data1 
+            data['data'] = data1 
+            result= data
+            # result['result']=data['data']
+            
+            return result, 200
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
+        return resp
 
 
 class deleteUser(Resource):
     @token_required
     def post(current_user, self):
-        print current_user
+        # print current_user
         #buat logic jika bukan admin maka tidak bisa delete
         # if not current_user == 11:
         #     resp = {'msg':'Cannot perform that function !'}, 401, {'WWW-Authenticate':'Basic realm="Admin required !" '}
         #     return resp
+        http_origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in http_origin:
+            id_rw = request.args.get('id', None)            #parameter header untuk delete
+            if id_rw is None :
+                raw_dict     = request.get_json(force=True)
+                id_rw=raw_dict['id']
 
-        id_rw = request.args.get('id', None)            #parameter header untuk delete
-        if id_rw is None :
-            raw_dict     = request.get_json(force=True)
-            id_rw=raw_dict['id']
+            # reqEnv = request.environ
+            # http_origin = reqEnv['HTTP_ORIGIN']
 
-        # reqEnv = request.environ
-        # http_origin = reqEnv['HTTP_ORIGIN']
+            try:
+                sql = db.session.query(tbl_users).filter_by(id = id_rw).update({"isDelete":True})
+                db.session.commit()
+                resp = {'status' : 'true'}, 200
+            except Exception as err:
+                resp = {'success':'false', 'msg':err}, 400
 
-        try:
-            sql = db.session.query(tbl_users).filter_by(id = id_rw).update({"isDelete":True})
-            db.session.commit()
-            resp = {'status' : 'true'}, 200
-        except Exception as err:
-            resp = {'success':'false', 'msg':err}, 400
-
-        return resp
+            return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
+            return resp
 
 # class updateUser(Resource):
 #     def post(self):
 
 class login(Resource):
     def post(self):
+        
+        http=request.environ
+        print http
 
         #authentication session
         auth = request.authorization                                    #get request header from browser
@@ -283,6 +325,7 @@ class login(Resource):
         else:
             resp = {'success':'false', 'msg':'Email salah.'}, 401, {'WWW-Authenticate':'Basic realm="Login required !" '}       #401 status UNAUTHORIZED, WWW-Authenticate itu untuk response error di header
         return resp
+
 
 
 def encript(password):

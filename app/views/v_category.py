@@ -38,72 +38,89 @@ class upload(Resource):
 class create_category(Resource):
     @token_required
     def post(current_user, self):
-        raw_dict = request.get_json(force=True)
-        # reqEnv = request.environ
-        # http_origin = reqEnv['ORIGIN']
+        http_origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in http_origin:
+            raw_dict = request.get_json(force=True)
 
-        try :
-            lastId = db.session.query(func.max(tbl_category.id)).one()[0]
-            if lastId == None : lastId = 0
-            id = int(lastId) + 1
-            name_category = raw_dict['name_category']
-            img_category = raw_dict['img_category']
-            # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-            data = tbl_category(id, name_category, img_category)
-            data.add(data)
+            try :
+                lastId = db.session.query(func.max(tbl_category.id)).one()[0]
+                if lastId == None : lastId = 0
+                id = int(lastId) + 1
+                name_category = raw_dict['name_category']
+                img_category = raw_dict['img_category']
+                # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+                data = tbl_category(id, name_category, img_category)
+                data.add(data)
 
-            resp = {'success':'true'}
+                resp = {'success':'true'}, 2000
 
-        except Exception as err:
-            resp = {'success':'false', 'msg': err}
+            except Exception as err:
+                resp = {'success':'false', 'msg': err}, 401
+            return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
         return resp
 
 class select_category(Resource):
     @token_required
     def get(current_user, self):
 
-        select = tbl_category.query.all()
-        data = category_schema().dump(select,  many = True).data
+        http_url = request.headers
+        if 'mooda.id' in http_url['host']: 
 
-        # print data
-        dataA = []
-        for i in range(len(data['data'])):
-            
-            data1 =[]
-            data1.insert(i, {
-                'id_category': data['data'][i]['id'],
-                'name_category': data['data'][i]['attributes']['name_category'],
-                'img_category':data['data'][i]['attributes']['img_category'],
-                'parent':''
-                })
-            for a in data1:
-                dataA.append(a)
-        data['data'] = dataA        
-        result = data
-        return result
+            select = tbl_category.query.all()
+            if select > 0:
+                data = category_schema().dump(select,  many = True).data
+                # print data
+                dataA = []
+                for i in range(len(data['data'])):
+                    
+                    data1 =[]
+                    data1.insert(i, {
+                        'id_category': data['data'][i]['id'],
+                        'name_category': data['data'][i]['attributes']['name_category'],
+                        'img_category':data['data'][i]['attributes']['img_category'],
+                        'parent':''
+                        })
+                    for a in data1:
+                        dataA.append(a)
+                data['data'] = dataA        
+                result = data, 200
+                
+            else:
+                result ={'msg':'No data found !'}, 200
+            return result
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
+        return resp
 
 #class endpoint
 class create_item(Resource):
     @token_required
     def post(current_user, self):
-        raw_dict = request.get_json(force=True)
-        # reqEnv = request.environ
-        # http_origin = reqEnv['ORIGIN']
 
-        try :
-            lastId = db.session.query(func.max(tbl_item.id)).one()[0]
-            if lastId == None : lastId = 0
-            id = int(lastId) + 1
-            name_item = raw_dict['name_item']
-            img_item = raw_dict['img_item']
-            # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-            data = tbl_item(id, name_item, img_item)
-            data.add(data)
+        http_origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in http_origin: 
+            raw_dict = request.get_json(force=True)
+            # reqEnv = request.environ
+            # http_origin = reqEnv['ORIGIN']
+            try :
+                lastId = db.session.query(func.max(tbl_item.id)).one()[0]
+                if lastId == None : lastId = 0
+                id = int(lastId) + 1
+                name_item = raw_dict['name_item']
+                img_item = raw_dict['img_item']
+                # createDate = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+                data = tbl_item(id, name_item, img_item)
+                data.add(data)
 
-            resp = {'success':'true'}
+                resp = {'success':'true'}, 200
 
-        except Exception as err:
-            resp = {'success':'false', 'msg': err}
+            except Exception as err:
+                resp = {'success':'false', 'msg': err}, 401
+            return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
         return resp
     
 class select_items(Resource):
@@ -123,47 +140,79 @@ class select_items(Resource):
         #         'parent':data['data'][i]['']
         #     })
 
-        return data
+        return data, 200
 
 class update_category(Resource):
     @token_required
     def patch(current_user, self):
-        raw_dict = request.get_json(force=True)
 
-        try:
-            id_rw = raw_dict['id_category']
-            name_rw = raw_dict['name_category']
+        http_origin = request.environ
+        if 'mooda.id' in http_origin:
+        # print http_origin
+            raw_dict = request.get_json(force=True)
 
-            updt = db.session.query(tbl_category).filter_by(id = id_rw).update({"name_category" : name_rw})   #script singkat
-            # updt = db.session.query(tbl_category).filter_by(id_category=id_rw).first()                #select id first
-            # updt.name_category=name_rw             #isi data nya dengan apa
-            db.session.commit()
+            try:
+                id_rw = raw_dict['id_category']
+                name_rw = raw_dict['name_category']
 
-            resp = {'success':'true'}
-        except Exception as err:
-            resp = {'success':'false', 'msg': err}
-        
+                updt = db.session.query(tbl_category).filter_by(id = id_rw).update({"name_category" : name_rw})   #script singkat
+                # updt = db.session.query(tbl_category).filter_by(id_category=id_rw).first()                #select id first
+                # updt.name_category=name_rw             #isi data nya dengan apa
+                db.session.commit()
+
+                resp = {'success':'true'}, 200
+            except Exception as err:
+                resp = {'success':'false', 'msg': err}, 401
+            
+            return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
         return resp
 
 class userchooseitem(Resource):
     @token_required
     def post(current_user, self):
         # raw_dict = request.json.get()
-        id_user = request.json.get("id_user")
-        id_item = request.json.get("id_item")
+        http_origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in http_origin:
+            id_user = request.json.get("id_user")
+            id_item = request.json.get("id_item")
 
-        try:
-            data = tbl_interested(id_user, id_item)
-            data.add(data)
+            try:
+                data = tbl_interested(id_user, id_item)
+                data.add(data)
 
-            resp = {'success':'true'}
+                resp = {'success':'true'}, 200
 
-        except Exception as err:
-            resp = resp = {'success':'false', 'msg': err}
+            except Exception as err:
+                resp = {'success':'false', 'msg': err}, 401
 
+            return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
         return resp
 
+class userchoosecategory(Resource):
+    @token_required
+    def post(current_user, self):
+        http_origin = request.environ['HTTP_ORIGIN']
+        if 'mooda.id' in http_origin:
+                
+            id_user = request.json.get("id_user")
+            id_category = request.json.get("id_category")
 
+            try:
+                data = tbl_interested(id_user, id_category)
+                data.add(data)
+                resp = {'success':'true'}, 200
+
+            except Exception as err:
+                resp = {'success':'false'}, 401
+
+            return resp
+        else:
+            resp = {'status':'Request Invalid', 'msg':'Request only from mooda.id !'}, 403
+        return resp
 
 
 #endpoint categroy
@@ -174,4 +223,4 @@ api.add_resource(update_category, '/update')
 #endpoint item
 api.add_resource(create_item, '/item')
 api.add_resource(select_items, '/item')
-api.add_resource(userchooseitem, '/userchoose')
+api.add_resource(userchoosecategory, '/userchoose')

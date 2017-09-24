@@ -12,11 +12,11 @@ from app import db
 class tbl_interested(db.Model, CRUD):
     id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.Integer, db.ForeignKey('tbl_users.id'))
-    id_item = db.Column(db.Integer, db.ForeignKey('tbl_item.id'))
+    id_category = db.Column(db.Integer, db.ForeignKey('tbl_category.id'))
 
-    def __init__(self, userid, id_item):
+    def __init__(self, userid, id_category):
         self.userid = userid
-        self.id_item = id_item
+        self.id_category = id_category
 
 # class tbl_category
 class tbl_category(db.Model, CRUD):
@@ -28,7 +28,7 @@ class tbl_category(db.Model, CRUD):
     updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
     isDelete = db.Column(db.Boolean, default=False, nullable=True)
     choose = db.relationship('tbl_item', backref='tbl_category', lazy='dynamic')
-
+    choose = db.relationship('tbl_interested', backref='tbl_item', lazy='dynamic')
 
     def __init__(self, id, name_category, img_category):
         self.id = id
@@ -57,7 +57,7 @@ class tbl_item(db.Model, CRUD):
     updateDate = db.Column(db.TIMESTAMP, default=func.now(), nullable=True)
     isDelete = db.Column(db.Boolean, default=False, nullable=True)
     id_category = db.Column(db.Integer, db.ForeignKey('tbl_category.id'))
-    choose = db.relationship('tbl_interested', backref='tbl_item', lazy='dynamic') 
+    # choose = db.relationship('tbl_interested', backref='tbl_item', lazy='dynamic') 
     
     def __init__(self, id, name_item, img_item):
         self.id = id
