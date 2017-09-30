@@ -44,7 +44,6 @@ def from_mooda():
         return False
 
 class createuser(Resource):
-    @token_required
     def post(current_user, self):
         http_origin = request.environ['HTTP_ORIGIN']
         if 'mooda.id' in http_origin:
